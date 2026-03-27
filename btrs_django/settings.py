@@ -79,7 +79,7 @@ WSGI_APPLICATION = 'btrs_django.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'ridify_db',
+        'NAME': 'btrs_db',
         'USER': 'root',  
         'PASSWORD': '',  
         'HOST': 'localhost',
