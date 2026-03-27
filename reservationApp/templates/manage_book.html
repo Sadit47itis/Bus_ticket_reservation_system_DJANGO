@@ -12,7 +12,7 @@
         </div>
         <div class="form-group mb-3">
             <label for="seats" class="control-label">Number of Seats</label>
-            <input class="form-control rounded-0" name="seats" id="seats" max="{{ schedule.count_available|floatformat:0 }}" type="number" value="{{ book.seats }}" required>
+            <input class="form-control rounded-0" name="seats" id="seats" min="1" max="{{ schedule.count_available|floatformat:0 }}" type="number" value="{{ book.seats }}" required>
         </div>
         <div class="form-group mb-3">
             <label for="fare" class="control-label">Fare</label>
@@ -28,17 +28,25 @@
     $(function() {
         $('#seats').on('input change',function(){
             var fare = $('#fare').val()
-                fare = fare.replace(/'/gi,'')
+            // FIX: Replace commas globally instead of single quotes
+            fare = fare.replace(/,/g, '')
+            
             var seats = $(this).val()
+            
+            // Do the math
             var total = parseFloat(fare) * parseFloat(seats)
-            total = total > 0 ? total :0
+            total = total > 0 ? total : 0
+            
+            // Display it back with commas
             $('#payable').val(parseFloat(total).toLocaleString('en-US'))
         })
+
         $('#category').select2({
             width:"100%",
             placeholder: "Please Select Category Here",
             dropdownParent:$('#uni_modal')
         })
+
         $('#book-form').submit(function(e) {
             e.preventDefault();
             var _this = $(this)

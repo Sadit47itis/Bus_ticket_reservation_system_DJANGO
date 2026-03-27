@@ -10,7 +10,6 @@ from django.contrib.auth.models import User
 from django.http import HttpResponse
 from reservationApp.forms import UserRegistration, UpdateProfile, UpdatePasswords, SaveCategory, SaveLocation, SaveBus, SaveSchedule, SaveBooking, PayBooked
 from reservationApp.models import Booking, Category, Location, Bus, Schedule
-from cryptography.fernet import Fernet
 from django.conf import settings
 import base64
 from datetime import datetime
@@ -449,15 +448,50 @@ def save_booking(request):
             booking = Booking.objects.get(pk=request.POST['id'])
         else:
             booking = None
+            
         if booking is None:
             form = SaveBooking(request.POST)
         else:
             form = SaveBooking(request.POST, instance= booking)
+            
         if form.is_valid():
-            form.save()
+            # --- START OF NEW VALIDATION LOGIC ---
+            seats_requested = int(form.cleaned_data['seats'])
+            schedule = form.cleaned_data['schedule']
+            
+            # Calculate exactly how many seats are actually available
+            available_seats = int(schedule.count_available())
+            
+            # If they are updating an existing booking, add their currently held seats back to the available pool for the math
+            if booking is not None:
+                available_seats += int(booking.seats)
+                
+            # 1. The Negative Test Fix (Must be greater than 0)
+            if seats_requested <= 0:
+                resp['msg'] = 'Invalid number of seats. You must book at least 1 seat.'
+                return HttpResponse(json.dumps(resp), content_type='application/json')
+            
+            # 2. The Overbooking Fix (Must be less than or equal to available seats)
+            if seats_requested > available_seats:
+                # We return it as an integer so it looks clean (no decimals)
+                resp['msg'] = f'Not enough seats available! Only {int(available_seats)} seats left on this trip.'
+                return HttpResponse(json.dumps(resp), content_type='application/json')
+            # --- END OF NEW VALIDATION LOGIC ---
+
+            # If it passes the checks, save it to the database!
+            
+            booking_instance = form.save(commit=False) # Pause before saving
+            
+            # ONLY attach the user if this is a brand new booking
+            if booking is None: 
+                if request.user.is_authenticated:
+                    booking_instance.user = request.user
+                    
+            booking_instance.save() # Now save it for real!
+            # -------------------------------------
             if booking is None:
                 booking = Booking.objects.last()
-                messages.success(request, f'Booking has been saved successfully. Your Booking Refderence Code is: <b>{booking.code}</b>', extra_tags = 'stay')
+                messages.success(request, f'Booking has been saved successfully. Your Booking Reference Code is: <b>{booking.code}</b>', extra_tags = 'stay')
             else:
                 messages.success(request, f'<b>{booking.code}</b> Booking has been updated successfully.')
             resp['status'] = 'success'
@@ -469,11 +503,23 @@ def save_booking(request):
         resp['msg'] = 'No data has been sent.'
     return HttpResponse(json.dumps(resp), content_type = 'application/json')
 
-def bookings(request):
-    context['page_title'] = "Bookings"
-    bookings = Booking.objects.all()
-    context['bookings'] = bookings
 
+@login_required
+def bookings(request):
+    # We use a brand new context dictionary here so it doesn't bleed into other pages
+    context = {}
+    
+    # If they are an admin or staff, show EVERYTHING
+    if request.user.is_superuser or request.user.is_staff:
+        bookings = Booking.objects.all()
+    else:
+        # Otherwise, only show tickets belonging to this specific user
+        bookings = Booking.objects.filter(user=request.user)
+        
+    # Pass the filtered list to the template
+    context['bookings'] = bookings
+    context['page_title'] = "Bookings"
+    
     return render(request, 'bookings.html', context)
 
 

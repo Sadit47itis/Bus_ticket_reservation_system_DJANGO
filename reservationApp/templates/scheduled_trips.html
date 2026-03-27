@@ -71,9 +71,19 @@
                                 <span class="badge bg-danger bg-gradient rounded-pill px-2">Cancelled</span> {% endif %}
                             </td>
                             <td class="px-2 py-1 align-middle text-center">
-                                <button class="btn btn-outline-primary btn-sm book-data" type="button" data-id="{{ schedule.pk }}" title="Book Now">
-                                    <i class="fa fa-ticket-alt"></i> Book
-                                </button>
+                                {% if schedule.is_past %}
+                                    <button class="btn btn-secondary btn-sm" type="button" disabled title="Bus has departed">
+                                        <i class="fa fa-clock"></i> Departed
+                                    </button>
+                                {% elif schedule.count_available > 0 %}
+                                    <button class="btn btn-outline-primary btn-sm book-data" type="button" data-id="{{ schedule.pk }}" title="Book Now">
+                                        <i class="fa fa-ticket-alt"></i> Book
+                                    </button>
+                                {% else %}
+                                    <button class="btn btn-secondary btn-sm" type="button" disabled title="Sold Out">
+                                        <i class="fa fa-ban"></i> Sold Out
+                                    </button>
+                                {% endif %}
                             </td>
                         </tr>
                         {% endfor %}

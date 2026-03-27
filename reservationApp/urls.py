@@ -33,9 +33,13 @@ urlpatterns = [
     path('manage_bus/<int:pk>',views.manage_bus,name='manage-bus-pk'),
     path('delete_bus/',views.delete_bus,name='delete-bus'),
     path('schedule/',views.schedule_mgt,name='schedule-page'),
-    path('manage_schedule',views.manage_schedule,name='manage-schedule'),
-    path('save_schedule/',views.save_schedule,name='save-schedule'),
+    
     path('manage_schedule/<int:pk>',views.manage_schedule,name='manage-schedule-pk'),
+    
+    path('manage_schedule/',views.manage_schedule,name='manage-schedule'),
+    
+    path('save_schedule/',views.save_schedule,name='save-schedule'),
+    
     path('delete_schedule/',views.delete_schedule,name='delete-schedule'),
     path('find_trip/',views.find_trip,name='find-trip-page'),
     path('scheduled_trips/',views.scheduled_trips,name='scheduled-trips-page'),

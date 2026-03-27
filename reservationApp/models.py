@@ -5,6 +5,7 @@ from django.utils import timezone
 from django.dispatch import receiver
 from more_itertools import quantify
 from django.db.models import Sum
+from django.contrib.auth.models import User
 
 # Create your models here.
 
@@ -30,7 +31,7 @@ class Location(models.Model):
 class Bus(models.Model):
     category = models.ForeignKey(Category,on_delete=models.CASCADE, blank= True, null = True)
     bus_number = models.CharField(max_length=250)
-    seats = models.FloatField(max_length=5, default=0)
+    seats = models.IntegerField(default=0)
     status = models.CharField(max_length=2, choices=(('1','Active'),('2','Inactive')), default=1)
     date_created = models.DateTimeField(default=timezone.now)
     date_updated = models.DateTimeField(auto_now=True)
@@ -58,8 +59,13 @@ class Schedule(models.Model):
             return self.bus.seats
         else:
             return self.bus.seats - booked
+    
+    @property
+    def is_past(self):
+        return self.schedule < timezone.now()
 
 class Booking(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     code = models.CharField(max_length=100)
     name = models.CharField(max_length=250)
     schedule = models.ForeignKey(Schedule,on_delete=models.CASCADE)
